@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    compile 'io.vertx:vertx-web:3.0.0'
+    compile 'io.vertx:vertx-web:3.9.0'
     compile 'io.vertx:vertx-mongo-client:3.9.0'
     compile 'org.projectlombok:lombok:1.18.12'
     annotationProcessor 'org.projectlombok:lombok:1.18.12'

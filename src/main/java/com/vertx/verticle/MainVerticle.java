@@ -1,14 +1,16 @@
 package com.vertx.verticle;
 
+import com.fasterxml.jackson.databind.util.BeanUtil;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+
+import java.util.List;
 
 
 public class MainVerticle extends AbstractVerticle {
@@ -54,26 +56,36 @@ public class MainVerticle extends AbstractVerticle {
         setMongoClient(MongoClient.createShared(vertx, mongoconfig));
         router.route("/v1/employees*").handler(BodyHandler.create());
         router.post("/v1/employees").handler(this::addOne);
+        router.get("/v1/employees").handler(this::getAll);
         createServer(router, future);
 
     }
 
-    public void addOne(RoutingContext routingContext) {
+    private void getAll(RoutingContext routingContext) {
+        getMongoClient().find("employee", new JsonObject(), results -> {
+            if (results.succeeded()) {
+                List<JsonObject> objects = results.result();
+                routingContext.response()
+                        .putHeader("content-type", "application/json; charset=utf-8")
+                        .end(Json.encodePrettily(objects));
+            }
+        });
+    }
+
+    private void addOne(RoutingContext routingContext) {
         Employee employee = Json.decodeValue(routingContext.getBodyAsString(),
                 Employee.class);
-
-        routingContext.response().putHeader("content-type", "application/json; charset=utf-8")
-                .end(Json.encodePrettily(employee));
         JsonObject jsonObject = JsonObject.mapFrom(employee);
-
         getMongoClient().insert("employee", jsonObject, res -> {
             if (res.succeeded()) {
                 String id = res.result();
-                System.out.println("Inserted book with id " + id);
+                routingContext.response().putHeader("content-type", "application/json; charset=utf-8")
+                        .end(Json.encodePrettily(employee));
             } else {
                 res.cause().printStackTrace();
             }
         });
-
     }
+
+
 }
